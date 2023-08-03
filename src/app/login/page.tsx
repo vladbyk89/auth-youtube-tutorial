@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React from "react";
+import React, { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -12,14 +12,17 @@ export default function Login() {
     password: "",
   });
 
-  const [buttonDisabled, setButtonDisabled] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [forgotpassword, setForgotpassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const onLogin = async () => {
     try {
       setLoading(true);
       const { data } = await axios.post("/api/users/login", user);
-      console.log(data);
 
       router.push("/profile");
     } catch (error: any) {
@@ -27,6 +30,18 @@ export default function Login() {
       console.log("SignUp failed", error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendForgotPasswordEmail = async (e: FormEvent) => {
+    e.preventDefault();
+    const { data } = await axios.post("/api/users/forgotpasswordemail", {
+      email,
+    });
+    if (!data.ok) {
+      setEmailError(true);
+    } else {
+      setEmailSent(true);
     }
   };
 
@@ -59,12 +74,30 @@ export default function Login() {
         className="p-2 border-gray-300 rounded-lg mb-4 focus:outline-none"
       />
       <button
+        disabled={buttonDisabled}
         onClick={onLogin}
         className="p-2 border border-gray-300 rounded-lg mb-3 focus:outline-none"
       >
         Login here
       </button>
       <Link href="/signUp">Visit signUp page</Link>
+      <button onClick={() => setForgotpassword(true)}>forgot password?</button>
+      {forgotpassword && (
+        <form onSubmit={sendForgotPasswordEmail}>
+          <label htmlFor="email">Email: </label>{" "}
+          <input
+            type="email"
+            placeholder="EMAIL"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg mb-3 focus:outline-none"
+          />
+          <button type="submit">Send...</button>
+          <br />
+          {emailError && <h6>Email does not exist in system</h6>}
+          {emailSent && <h6>Check your email!</h6>}
+        </form>
+      )}
     </div>
   );
 }
